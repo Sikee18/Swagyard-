@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  email        String?  @unique
+  passwordHash String
+  role         String   @default("cashier") // admin, cashier, staff
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  nameEn    String    @map("name_en")
+  nameTa    String?   @map("name_ta")
+  isActive  Boolean   @default(true) @map("is_active")
+  sortOrder Int       @default(0) @map("sort_order")
+  createdAt DateTime  @default(now()) @map("created_at")
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            Int               @id @default(autoincrement())
+  name          String
+  nameTa        String?           @map("name_ta")
+  categoryId    Int?              @map("category_id")
+  category      Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  priceInPaise  Int               @default(0) @map("price_in_paise")
+  costInPaise   Int?              @map("cost_in_paise")
+  stockQuantity Int               @default(0) @map("stock_quantity")
+  lowStockAlert Int               @default(5) @map("low_stock_alert")
+  sku           String?           @unique
+  barcode       String?           @unique
+  hasVariants   Boolean           @default(false) @map("has_variants")
+  isActive      Boolean           @default(true) @map("is_active")
+  sortOrder     Int               @default(0) @map("sort_order")
+  description   String?
+  imageUrl      String?           @map("image_url")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  variants      ProductVariant[]
+  movements     InventoryMovement[]
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id           Int                 @id @default(autoincrement())
+  productId    Int                 @map("product_id")
+  product      Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantName  String              @map("variant_name") // e.g. "Size 32", "Large"
+  sizeLabel    String?             @map("size_label")
+  sku          String?             @unique
+  barcode      String?             @unique
+  costInPaise  Int?                @map("cost_in_paise")
+  mrpInPaise   Int?                @map("mrp_in_paise")
+  priceInPaise Int                 @default(0) @map("price_in_paise")
+  stock        Int                 @default(0)
+  isActive     Boolean             @default(true) @map("is_active")
+  sortOrder    Int                 @default(0) @map("sort_order")
+  imageUrl     String?             @map("image_url")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  movements    InventoryMovement[]
+  orderItems   OrderItem[]
+
+  @@map("product_variants")
+}
+
+model BarcodeRegistry {
+  id           Int      @id @default(autoincrement())
+  barcodeValue String   @unique @map("barcode_value")
+  productId    Int?     @map("product_id")
+  variantId    Int?     @map("variant_id")
+  entityType   String   @default("product") @map("entity_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("barcode_registry")
+}
+
+model Order {
+  id                  String      @id @default(uuid())
+  invoiceNo           String      @unique @map("invoice_no")
+  customerName        String?     @map("customer_name")
+  phone               String?
+  address             String?
+  subtotalInPaise     Int         @default(0) @map("subtotal_in_paise")
+  couponCode          String?     @map("coupon_code")
+  couponDiscountPaise Int         @default(0) @map("coupon_discount_paise")
+  manualDiscountPaise Int         @default(0) @map("manual_discount_paise")
+  totalGstPaise       Int         @default(0) @map("total_gst_paise")
+  gstEnabled          Boolean     @default(false) @map("gst_enabled")
+  deliveryChargePaise Int         @default(0) @map("delivery_charge_paise")
+  totalInPaise        Int         @default(0) @map("total_in_paise")
+  paymentMode         String      @default("cash") @map("payment_mode") // cash, card, qr, split
+  splitDetails        Json?       @map("split_details") // { cash, card, qr, other } in paise
+  status              String      @default("completed") // completed, cancelled, refunded
+  remarks             String?
+  referenceNumber     String?     @map("reference_number")
+  cashierName         String?     @default("Admin") @map("cashier_name")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+  items               OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id           Int             @id @default(autoincrement())
+  orderId      String          @map("order_id")
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    Int?            @map("product_id")
+  product      Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId    Int?            @map("variant_id")
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  productName  String          @map("product_name")
+  category     String?
+  unitPrice    Int             @map("unit_price_in_paise")
+  quantity     Int             @default(1)
+  lineTotal    Int             @map("line_total_in_paise")
+  isManual     Boolean         @default(false) @map("is_manual")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  @@map("order_items")
+}
+
+model Coupon {
+  id              Int       @id @default(autoincrement())
+  code            String    @unique
+  percentage      Int       @default(0)
+  minOrderPaise   Int       @default(0) @map("min_order_paise")
+  usageLimit      Int?      @map("usage_limit")
+  usageCount      Int       @default(0) @map("usage_count")
+  expiryDate      DateTime? @map("expiry_date")
+  isActive        Boolean   @default(true) @map("is_active")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@map("coupons")
+}
+
+model Expense {
+  id             String    @id @default(uuid())
+  expenseDate    DateTime  @default(now()) @map("expense_date")
+  categoryId     Int?      @map("category_id")
+  categoryName   String    @map("category_name")
+  amountInPaise  Int       @map("amount_in_paise")
+  paymentMode    String    @default("cash") @map("payment_mode")
+  recordedByName String    @default("Admin") @map("recorded_by_name")
+  description    String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("expenses")
+}
+
+model ExpenseCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("expense_categories")
+}
+
+model InventoryMovement {
+  id             Int             @id @default(autoincrement())
+  productId      Int?            @map("product_id")
+  product        Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId      Int?            @map("variant_id")
+  variant        ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  previousStock  Int             @map("previous_stock")
+  newStock       Int             @map("new_stock")
+  quantityChange Int             @map("quantity_change")
+  reason         String          // Damaged, Theft, Audit, Return, Inward Shipment
+  createdByName  String          @default("Admin") @map("created_by_name")
+  note           String?
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  @@map("inventory_movements")
+}
+
+model AdvanceOrder {
+  id                   String                  @id @default(uuid())
+  depositId            String?                 @unique @map("deposit_id") // DEP-YYYYMMDD-NNNN
+  customerName         String                  @map("customer_name")
+  phone                String
+  address              String?
+  productName          String                  @map("product_name")
+  category             String?
+  description          String?
+  totalAmountPaise     Int                     @map("total_amount_paise")
+  depositAmountPaise   Int                     @default(0) @map("deposit_amount_paise")
+  remainingBalancePaise Int                    @default(0) @map("remaining_balance_paise")
+  depositPaymentMode   String                  @default("cash") @map("deposit_payment_mode")
+  expectedDeliveryDate DateTime?               @map("expected_delivery_date")
+  status               String                  @default("pending_deposit") // pending_deposit, waiting_final_payment, ready_for_delivery, completed, cancelled
+  referenceNumber      String?                 @map("reference_number")
+  remarks              String?
+  completedOrderId     String?                 @map("completed_order_id")
+  invoiceNo            String?                 @map("invoice_no")
+  completedAt          DateTime?               @map("completed_at")
+  finalPaymentMode     String?                 @map("final_payment_mode")
+  finalSplitDetails    Json?                   @map("final_split_details")
+  createdByName        String?                 @map("created_by_name")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+  payments             AdvanceOrderPayment[]
+  timeline             AdvanceOrderTimeline[]
+
+  @@map("advance_orders")
+}
+
+model AdvanceOrderPayment {
+  id             Int          @id @default(autoincrement())
+  advanceOrderId String       @map("advance_order_id")
+  advanceOrder   AdvanceOrder @relation(fields: [advanceOrderId], references: [id], onDelete: Cascade)
+  paymentType    String       @default("deposit") @map("payment_type") // deposit, remaining
+  amountInPaise  Int          @map("amount_in_paise")
+  paymentMode    String       @default("cash") @map("payment_mode")
+  splitDetails   Json?        @map("split_details")
+  remarks        String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@map("advance_order_payments")
+}
+
+model AdvanceOrderTimeline {
+  id             Int          @id @default(autoincrement())
+  advanceOrderId String       @map("advance_order_id")
+  advanceOrder   AdvanceOrder @relation(fields: [advanceOrderId], references: [id], onDelete: Cascade)
+  eventType      String       @map("event_type")
+  label          String
+  remarks        String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@map("advance_order_timeline")
+}
+
+model CustomerBirthday {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  birthDate DateTime @map("birth_date")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("customer_birthdays")
+}
+
+model InvoiceSequence {
+  id           String @id // Format: YYYYMMDD
+  lastSequence Int    @default(0) @map("last_sequence")
+
+  @@map("invoice_sequences")
+}

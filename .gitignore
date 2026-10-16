@@ -1,0 +1,29 @@
+# Dependencies & build output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets — use .env.example as the template
+.env
+.env*.local
+
+# Local runtime data (JSON fallback store; contains password hashes and live records)
+prisma/dev_db.json
+
+# Third-party reference material captured from the original site (not ours to redistribute;
+# screenshots and network captures include that store's real customer data)
+reference_assets/
+docs/initial_network.json
+docs/initial_storage.json
+docs/initial_nav_dump.json
+docs/screenshots/*
+!docs/screenshots/swagyard-*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

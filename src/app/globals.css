@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Dark Luxury Base */
+  --brand-blue: #111111;
+  --brand-blue-hover: #262626;
+  --brand-blue-light: #FAF7F2;
+  --brand-blue-surface: #F1EBE0;
+
+  /* Gold Luxury Accent */
+  --brand-gold: #C9B79C;
+  --brand-gold-rich: #C9B79C;
+  --brand-gold-deep: #7A6A4F;
+  --brand-gold-hover: #A8946F;
+  --brand-gold-glow: #F1EBE0;
+  --brand-gold-border: #C9B79C;
+
+  /* Surface & Text */
+  --brand-surface: #FAF7F2;
+  --brand-text-dark: #1F1F1F;
+  --brand-text-muted: #6B7280;
+}
+
+body {
+  background-color: var(--brand-surface);
+  color: var(--brand-text-dark);
+  font-family: var(--font-dm-sans), var(--font-outfit), var(--font-tamil), system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbars matching reference */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 183, 156, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 183, 156, 0.8);
+}
+
+/* Print Styles for 80mm Thermal Receipt and Invoices */
+@media print {
+  @page {
+    size: auto;
+    margin: 8mm 10mm;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  aside, nav, header, button, .no-print {
+    display: none !important;
+  }
+  .print\:m-0 {
+    margin: 0 !important;
+  }
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
