@@ -10,7 +10,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node scripts/seed.js",
-    "test:rules": "node scripts/test_business_rules.js"
+    "test:rules": "node scripts/test_business_rules.js",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && node scripts/import-json-to-postgres.js --if-empty && next build",
+    "db:import": "node scripts/import-json-to-postgres.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

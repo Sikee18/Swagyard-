@@ -66,6 +66,12 @@ export const db = {
   prisma,
   // Helper to check if external database is reachable (cached with quick timeout)
   isPostgresAvailable: async () => {
+    // Serverless hosts (Vercel) have a read-only filesystem, so the JSON store can't work there;
+    // always use PostgreSQL and let a cold-starting database (e.g. Neon) take the time it needs.
+    if (process.env.VERCEL) {
+      postgresStatus = true;
+      return true;
+    }
     const now = Date.now();
     if (postgresStatus !== null && now - lastPostgresCheck < 30000) {
       return postgresStatus;

@@ -2,8 +2,9 @@
  * One-time import of the local JSON store (prisma/dev_db.json) into PostgreSQL.
  * Keeps record IDs, then advances the SERIAL sequences past the imported IDs.
  *
- * Usage: node scripts/import-json-to-postgres.js [--force]
- *   --force  wipe existing rows first (otherwise refuses to run on a non-empty database)
+ * Usage: node scripts/import-json-to-postgres.js [--force | --if-empty]
+ *   --force     wipe existing rows first (otherwise refuses to run on a non-empty database)
+ *   --if-empty  import only into an empty database, otherwise exit quietly (used by vercel-build)
  */
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +22,10 @@ const date = (v) => (v ? new Date(v) : undefined);
 
 async function main() {
   const existing = await prisma.user.count();
+  if (existing && process.argv.includes('--if-empty')) {
+    console.log('Database already has data; skipping import.');
+    return;
+  }
   if (existing && !process.argv.includes('--force')) {
     console.error('Database already has data. Re-run with --force to wipe and re-import.');
     process.exit(1);
@@ -126,7 +131,8 @@ async function main() {
     await tx.invoiceSequence.createMany({
       data: Object.entries(data.invoiceSequences || {}).map(([id, lastSequence]) => ({ id, lastSequence })),
     });
-  });
+    // Remote databases (e.g. Neon) need far longer than the 5s default for this many round trips
+  }, { maxWait: 20000, timeout: 120000 });
 
   // Advance SERIAL sequences past imported IDs
   for (const table of [
