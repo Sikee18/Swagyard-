@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin } from '@/lib/auth';
 import { findBarcodeOwner, recordMovement } from '@/lib/inventory-server';
 
 const schema = z.object({
@@ -24,7 +24,7 @@ const schema = z.object({
  */
 export async function POST(request: Request) {
   try {
-    const user = await requireAuth();
+    const user = await requireAdmin();
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid request' }, { status: 400 });
@@ -61,7 +61,8 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ success: true, items: items.length, labels });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: 'Failed to receive stock with barcodes' }, { status: 500 });
   }
 }

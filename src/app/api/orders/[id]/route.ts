@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin, requireAuth } from '@/lib/auth';
 
 export async function GET(
   request: Request,
@@ -58,12 +58,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
-    await requireAuth();
+    await requireAdmin();
     const removed = await db.orders.delete({ where: { id: params.id } });
     if (!removed) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: err.message || 'Error deleting order' }, { status: 500 });
   }
 }

@@ -15,6 +15,14 @@
       "role": "cashier",
       "name": "Shift Cashier",
       "passwordHash": "$2a$10$uKQgerH.JGwzFAgGow.cFu1RJGxEg0ttaj3xcvKmgKEs7pYoKSUIW"
+    },
+    {
+      "id": "usr_staff_003",
+      "username": "staff",
+      "email": "staff@swagyard.com",
+      "role": "staff",
+      "name": "Store Staff",
+      "passwordHash": "$2a$10$FujpCIn5lP9ozs7qs32Bb.vXURExZS1JFi/3Izc7GNTX4yDdrBUym"
     }
   ],
   "categories": [

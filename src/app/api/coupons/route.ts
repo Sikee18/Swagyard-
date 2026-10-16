@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin } from '@/lib/auth';
 import { parseCouponInput } from './validation';
 
 export async function GET(request: Request) {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await requireAuth();
+    await requireAdmin();
     const body = await request.json();
     const code = String(body.code || '').trim().toUpperCase();
     if (!code) {
@@ -45,7 +45,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(coupon, { status: 201 });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: 'Failed to save coupon' }, { status: 500 });
   }
 }

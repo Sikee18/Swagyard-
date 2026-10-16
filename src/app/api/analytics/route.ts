@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin } from '@/lib/auth';
 
 export async function GET() {
   try {
-    await requireAuth();
+    await requireAdmin();
 
     const [orders, products, expenses] = await Promise.all([
       db.orders.findMany(),
@@ -107,7 +107,8 @@ export async function GET() {
       categoryBreakdown,
     });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: err.message || 'Error calculating analytics' }, { status: 500 });
   }
 }

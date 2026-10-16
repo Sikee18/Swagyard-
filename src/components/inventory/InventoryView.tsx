@@ -11,6 +11,7 @@ import { BarcodeGeneratorModal } from './BarcodeGeneratorModal';
 import { ProductEditor } from './ProductEditor';
 import { CategoriesPanel } from './CategoriesPanel';
 import { InventoryReports } from './InventoryReports';
+import { useIsAdmin } from '@/components/layout/RoleContext';
 
 type SubTab = 'stock' | 'products' | 'categories' | 'analytics';
 type StockFilter = 'all' | 'in_stock' | 'low' | 'out';
@@ -18,6 +19,7 @@ type StockFilter = 'all' | 'in_stock' | 'low' | 'out';
 const money = (n: number) => `₹${(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
+  const isAdmin = useIsAdmin();
   const [tab, setTab] = useState<SubTab>('stock');
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<{ id: number; nameEn: string }[]>([]);
@@ -132,6 +134,7 @@ export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
             <ChartColumn size={14} /> Analytics &amp; Reports
           </button>
         </div>
+        {isAdmin && (
         <button
           type="button"
           onClick={() => setGenerator(true)}
@@ -140,6 +143,7 @@ export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
         >
           <Printer size={15} /> Add Barcode
         </button>
+        )}
       </div>
 
       {tab === 'stock' && (
@@ -270,6 +274,7 @@ export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
                             >
                               <Pen size={14} />
                             </button>
+                            {isAdmin && (
                             <button
                               type="button"
                               onClick={() => removeSku(s)}
@@ -278,6 +283,7 @@ export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
                             >
                               <Trash2 size={14} />
                             </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -291,7 +297,7 @@ export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
       )}
 
       {tab === 'products' && (
-        <ProductEditor products={products} categories={categories} initialProductId={editProductId} onClearEdit={() => setEditProductId(null)} onSaved={load} />
+        <ProductEditor canDelete={isAdmin} products={products} categories={categories} initialProductId={editProductId} onClearEdit={() => setEditProductId(null)} onSaved={load} />
       )}
       {tab === 'categories' && <CategoriesPanel products={products} onChanged={load} />}
       {tab === 'analytics' && <InventoryReports skus={skus} />}
@@ -300,7 +306,7 @@ export function InventoryView(_props: { lang?: 'en' | 'ta' }) {
       {history && <StockHistoryModal item={history} onClose={() => setHistory(null)} />}
       {pricing && <QuickPriceModal item={pricing} onClose={() => setPricing(null)} onSuccess={load} />}
       {printing && <PrintLabelsModal item={printing} onClose={() => setPrinting(null)} />}
-      {generator && <BarcodeGeneratorModal products={products} onClose={() => setGenerator(false)} onSuccess={load} />}
+      {generator && isAdmin && <BarcodeGeneratorModal products={products} onClose={() => setGenerator(false)} onSuccess={load} />}
     </div>
   );
 }

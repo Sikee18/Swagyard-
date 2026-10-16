@@ -19,6 +19,14 @@ const SEED_DATA = {
       password: 'cashier123',
       role: 'cashier',
       name: 'Shift Cashier'
+    },
+    {
+      id: 'usr_staff_003',
+      username: process.env.STAFF_USERNAME || 'staff',
+      email: 'staff@swagyard.com',
+      password: process.env.STAFF_PASSWORD || 'staff123',
+      role: 'staff',
+      name: 'Store Staff'
     }
   ],
   categories: [

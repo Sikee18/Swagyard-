@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin } from '@/lib/auth';
 import { parseCouponInput } from '../validation';
 
 /**
@@ -12,7 +12,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth();
+    await requireAdmin();
     const id = parseInt(params.id, 10);
     const body = await request.json();
 
@@ -31,7 +31,8 @@ export async function PATCH(
     if (!updated) return NextResponse.json({ error: 'Coupon not found' }, { status: 404 });
     return NextResponse.json(updated);
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: err.message || 'Error updating coupon' }, { status: 500 });
   }
 }
@@ -41,12 +42,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await requireAuth();
+    await requireAdmin();
     const id = parseInt(params.id, 10);
     await db.coupons.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: err.message || 'Error deleting coupon' }, { status: 500 });
   }
 }

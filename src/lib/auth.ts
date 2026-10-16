@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
+import { NextResponse } from 'next/server';
 import { db } from './db';
+import { isAdmin } from './roles';
 
 // Never fall back to a built-in secret: a known key would let anyone forge admin sessions.
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -96,6 +98,24 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const cookie = cookies().get(SESSION_COOKIE_NAME);
   if (!cookie?.value) return null;
   return verifySessionToken(cookie.value);
+}
+
+/**
+ * Server route guard for admin-only actions (deleting records, coupons, analytics, barcodes).
+ * Throws 'Unauthorized' without a session and 'Forbidden' for staff.
+ */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireAuth();
+  if (!isAdmin(user.role)) throw new Error('Forbidden');
+  return user;
+}
+
+/** Maps auth guard errors to responses; returns null for any other error. */
+export function authErrorResponse(err: unknown) {
+  const message = err instanceof Error ? err.message : '';
+  if (message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (message === 'Forbidden') return NextResponse.json({ error: 'Admin access required for this action.' }, { status: 403 });
+  return null;
 }
 
 /**

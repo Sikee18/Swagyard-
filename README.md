@@ -155,9 +155,14 @@ npm start
 ```
 Open [http://localhost:3000](http://localhost:3000) (or specified port) in your browser.
 
-**Default Login Credentials**:
-- **Username**: `admin`
-- **Password**: `admin123`
+**Default Login Credentials** (change these before going live):
+
+| Role | Username | Password | Access |
+|---|---|---|---|
+| Admin | `admin` | `admin123` | Every module |
+| Staff | `staff` | `staff123` | Billing Panel, Inventory, Advance Orders, Birthdays, Expenses, Order History |
+
+Staff (and the legacy `cashier` role) cannot open Analytics, Coupons or the WhatsApp Center, generate barcodes, or delete products, orders or advance orders. The buttons are hidden and the API also rejects those actions with `403`.
 
 ---
 

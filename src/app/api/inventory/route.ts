@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin, requireAuth } from '@/lib/auth';
 import { findBarcodeOwner, recordMovement } from '@/lib/inventory-server';
 
 const variantSchema = z.object({
@@ -180,7 +180,7 @@ export async function PUT(request: Request) {
 /** DELETE ?id=<productId>[&variantId=<variantId>] — removes a product or a single variant SKU. */
 export async function DELETE(request: Request) {
   try {
-    await requireAuth();
+    await requireAdmin();
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));
     const variantId = searchParams.get('variantId') ? Number(searchParams.get('variantId')) : null;
@@ -189,7 +189,8 @@ export async function DELETE(request: Request) {
     if (!ok) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });
   }
 }

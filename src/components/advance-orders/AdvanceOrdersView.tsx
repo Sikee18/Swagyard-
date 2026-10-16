@@ -32,6 +32,7 @@ import {
   type AdvanceStatus,
 } from '@/lib/advance-orders';
 import { downloadAdvancePdf, printAdvanceReceipt } from '@/lib/advance-receipt';
+import { useIsAdmin } from '@/components/layout/RoleContext';
 
 type StatusFilter = 'all' | 'pending' | 'ready' | 'completed' | 'cancelled';
 type DateFilter = 'all' | 'today' | 'week' | 'month';
@@ -138,6 +139,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export function AdvanceOrdersView(_props: { lang?: 'en' | 'ta' }) {
+  const isAdmin = useIsAdmin();
   const [orders, setOrders] = useState<AdvanceOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -517,9 +519,11 @@ export function AdvanceOrdersView(_props: { lang?: 'en' | 'ta' }) {
                           <button type="button" onClick={() => openDetail(o)} title="View Details" className={`${iconBtn} bg-[#FAF7F2] hover:bg-gray-100 text-[#111111]`}>
                             <Eye size={15} />
                           </button>
-                          <button type="button" onClick={() => remove(o)} title="Delete Order" className={`${iconBtn} bg-slate-100 hover:bg-red-100 text-red-600`}>
-                            <Trash2 size={15} />
-                          </button>
+                          {isAdmin && (
+                            <button type="button" onClick={() => remove(o)} title="Delete Order" className={`${iconBtn} bg-slate-100 hover:bg-red-100 text-red-600`}>
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => printAdvanceReceipt(o)}

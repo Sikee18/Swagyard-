@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, Download, Eye, MessageCircle, Pen, RefreshCw, Search, ShoppingCart, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { InvoicePreviewModal } from '@/components/invoice/InvoicePreviewModal';
+import { useIsAdmin } from '@/components/layout/RoleContext';
 
 interface OrderItem {
   productName: string;
@@ -105,6 +106,7 @@ function exportCsv(rows: OrderRecord[]) {
 }
 
 export function OrderHistoryView({ onOpenPos }: { lang?: 'en' | 'ta'; onOpenPos?: () => void }) {
+  const isAdmin = useIsAdmin();
   const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -573,9 +575,11 @@ export function OrderHistoryView({ onOpenPos }: { lang?: 'en' | 'ta'; onOpenPos?
                     <button type="button" onClick={() => startEdit(o)} title="Edit Order Details" className="rounded-lg p-1.5 text-[#7A6A4F]">
                       <Pen size={15} />
                     </button>
-                    <button type="button" onClick={() => remove(o)} title="Delete Order" className="rounded-lg p-1.5 text-[#7A6A4F]">
-                      <Trash2 size={15} />
-                    </button>
+                    {isAdmin && (
+                      <button type="button" onClick={() => remove(o)} title="Delete Order" className="rounded-lg p-1.5 text-[#7A6A4F]">
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -645,14 +649,16 @@ export function OrderHistoryView({ onOpenPos }: { lang?: 'en' | 'ta'; onOpenPos?
                               <option value="pending">Pending</option>
                               <option value="completed">Completed</option>
                             </select>
-                            <button
-                              type="button"
-                              onClick={() => remove(o)}
-                              title="Delete Order"
-                              className="rounded-lg p-1 text-[#7A6A4F] transition-colors hover:bg-[#C9B79C]/5 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => remove(o)}
+                                title="Delete Order"
+                                className="rounded-lg p-1 text-[#7A6A4F] transition-colors hover:bg-[#C9B79C]/5 cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td className="px-2 py-3">

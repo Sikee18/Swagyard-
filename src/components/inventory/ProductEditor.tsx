@@ -48,12 +48,15 @@ const INPUT =
 const LABEL = 'block text-[11px] font-bold text-gray-700 mb-1';
 
 export function ProductEditor({
+  canDelete = false,
   products,
   categories,
   initialProductId,
   onClearEdit,
   onSaved,
 }: {
+  /** Deleting products is admin-only. */
+  canDelete?: boolean;
   products: any[];
   categories: Category[];
   initialProductId: number | null;
@@ -300,6 +303,7 @@ export function ProductEditor({
                 >
                   <Pen size={12} />
                 </button>
+                {canDelete && (
                 <button
                   type="button"
                   title={`Delete "${p.name}"`}
@@ -311,6 +315,7 @@ export function ProductEditor({
                 >
                   <Trash2 size={12} />
                 </button>
+                )}
               </div>
             ))
           )}
@@ -345,6 +350,7 @@ export function ProductEditor({
               >
                 <Plus size={12} /> Add New Product
               </button>
+              {canDelete && (
               <button
                 type="button"
                 title="Delete this product"
@@ -353,6 +359,7 @@ export function ProductEditor({
               >
                 <Trash2 size={12} /> Delete
               </button>
+              )}
             </div>
           )}
         </div>

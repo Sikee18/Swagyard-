@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { useAudioAlarm } from '@/hooks/useAudioAlarm';
 import { LowStockModal, LowStockItem } from './LowStockModal';
+import { RoleContext, type CurrentUser } from './RoleContext';
+import { canOpenTab, normalizeRole } from '@/lib/roles';
 
 export type NavTabId =
   | 'pos'
@@ -52,6 +54,31 @@ export function Shell({ children }: ShellProps) {
   const [lang, setLang] = useState<'en' | 'ta'>('en');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<CurrentUser | null>(null);
+
+  // Signed-in user decides which modules are available (staff get a reduced set)
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body) => {
+        if (!body?.user) {
+          router.push('/admin-login');
+          return;
+        }
+        setUser({ ...body.user, role: normalizeRole(body.user.role) });
+      })
+      .catch(() => {});
+  }, [router]);
+
+  const isAdmin = user?.role === 'admin';
+
+  // Staff opening an admin-only tab (e.g. via URL) are sent back to billing
+  useEffect(() => {
+    if (user && !canOpenTab(user.role, activeTab)) {
+      setActiveTab('pos');
+      window.history.replaceState(null, '', '/dashboard');
+    }
+  }, [user, activeTab]);
 
   // Audio Alarm Hook
   const { isMuted, toggleMute, playTestChime, startLowStockAlarm, stopLowStockAlarm } = useAudioAlarm();
@@ -100,6 +127,7 @@ export function Shell({ children }: ShellProps) {
   };
 
   const handleTabChange = (tab: NavTabId) => {
+    if (user && !canOpenTab(user.role, tab)) return;
     setActiveTab(tab);
     setMobileMenuOpen(false);
     const url = tab === 'pos' ? '/dashboard' : `/dashboard?tab=${tab}`;
@@ -124,7 +152,7 @@ export function Shell({ children }: ShellProps) {
     router.push('/admin-login');
   };
 
-  const navItems: { id: NavTabId; labelEn: string; labelTa: string; icon: React.ReactNode }[] = [
+  const allNavItems: { id: NavTabId; labelEn: string; labelTa: string; icon: React.ReactNode }[] = [
     { id: 'pos', labelEn: 'Billing Panel', labelTa: 'பில்லிங் பலகை', icon: <ShoppingBag size={18} /> },
     { id: 'inventory', labelEn: 'Inventory & Barcodes', labelTa: 'சரக்கு & பார்கோடுகள்', icon: <Boxes size={18} /> },
     { id: 'advance_orders', labelEn: 'Advance Orders', labelTa: 'முன்பதிவு ஆர்டர்கள்', icon: <CalendarClock size={18} /> },
@@ -135,6 +163,14 @@ export function Shell({ children }: ShellProps) {
     { id: 'coupons', labelEn: 'Coupons', labelTa: 'கூப்பன்கள்', icon: <Tag size={18} /> },
     { id: 'whatsapp', labelEn: 'WhatsApp Center', labelTa: 'வாட்ஸ்அப் மையம்', icon: <MessageCircle size={18} /> },
   ];
+  // Staff see the day-to-day modules only; "Inventory & Barcodes" is just "Inventory" for them
+  const navItems = !user
+    ? []
+    : allNavItems
+        .filter((item) => canOpenTab(user.role, item.id))
+        .map((item) => (item.id === 'inventory' && !isAdmin ? { ...item, labelEn: 'Inventory', labelTa: 'சரக்கு' } : item));
+  const roleBadge = isAdmin ? 'ADMIN' : 'STAFF';
+  const displayName = user?.name || (isAdmin ? 'Admin' : 'Staff');
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#FAF7F2]">
@@ -161,9 +197,15 @@ export function Shell({ children }: ShellProps) {
               </div>
             </div>
           </div>
-          <span className="px-2 py-0.5 rounded-md bg-[#C9B79C]/20 text-[#C9B79C] text-[10px] font-black tracking-wider">
-            ADMIN
-          </span>
+          {user && (
+            <span
+              className={`px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider ${
+                isAdmin ? 'bg-[#C9B79C]/20 text-[#C9B79C]' : 'bg-white/10 text-white'
+              }`}
+            >
+              {roleBadge}
+            </span>
+          )}
         </div>
 
         {/* Navigation Tab Links */}
@@ -257,9 +299,10 @@ export function Shell({ children }: ShellProps) {
             {/* Cashier Badge */}
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-white/15">
               <div className="w-7 h-7 rounded-full bg-[#C9B79C]/20 border border-[#C9B79C]/50 flex items-center justify-center text-[#C9B79C] font-black text-xs">
-                A
+                {displayName.charAt(0).toUpperCase()}
               </div>
-              <span className="text-xs font-bold text-white/90">Admin</span>
+              <span className="text-xs font-bold text-white/90">{displayName}</span>
+              {user && <span className="text-[9px] font-black tracking-wider text-[#C9B79C]/80">{roleBadge}</span>}
             </div>
           </div>
         </header>
@@ -304,7 +347,9 @@ export function Shell({ children }: ShellProps) {
 
         {/* Dynamic Page Tab Content Render */}
         <main className="flex-1 min-h-0 overflow-y-auto bg-[#FAF7F2]">
-          {children(activeTab, lang, handleTabChange)}
+          <RoleContext.Provider value={user}>
+            {user && canOpenTab(user.role, activeTab) ? children(activeTab, lang, handleTabChange) : null}
+          </RoleContext.Provider>
         </main>
       </div>
     </div>

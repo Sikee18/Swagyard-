@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { authErrorResponse, requireAdmin, requireAuth } from '@/lib/auth';
 import { STATUS_EVENT_LABELS, isLocked } from '@/lib/advance-orders';
 import { serializeAdvanceOrder } from '../serialize';
 
@@ -50,11 +50,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   try {
-    await requireAuth();
+    await requireAdmin();
     await db.advanceOrders.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    if (err.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const authError = authErrorResponse(err);
+    if (authError) return authError;
     return NextResponse.json({ error: err.message || 'Failed to delete order' }, { status: 500 });
   }
 }
